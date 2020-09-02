@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
 from fastapi.logger import logger
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field, root_validator
 
 try:
     import email_validator
@@ -116,6 +116,18 @@ class SchemaBase(BaseModel):
     externalDocs: Optional[ExternalDocumentation] = None
     example: Optional[Any] = None
     deprecated: Optional[bool] = None
+
+    class Config:
+        extras = "allow"
+
+    @root_validator(pre=False,)
+    def validate_openapi_extensions(cls, values):
+        import re
+
+        valid_extension = re.compile("^x-")
+        values = {k: v for k, v in values.items() if valid_extension.match(k) or k in cls.schema()["properties"]}
+
+        return values
 
 
 class Schema(SchemaBase):
